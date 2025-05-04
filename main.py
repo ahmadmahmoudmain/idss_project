@@ -100,33 +100,39 @@ class GraphManager:
                 pass
         return tk_img
 
-    def bfs(self, start):
-        # Note: Only reachable nodes are included; extend to include all nodes if needed
+    def bfs(self, start, goal=None):
         all_nodes = set(self.graph).union(*self.graph.values())
         if start not in all_nodes:
             raise ValueError(f"Node '{start}' not in graph")
+        if goal and goal not in all_nodes:
+            raise ValueError(f"Goal node '{goal}' not in graph")
         visited, queue, order = set(), deque([start]), []
         while queue:
             node = queue.popleft()
             if node not in visited:
                 visited.add(node)
                 order.append(node)
+                if node == goal:
+                    return order
                 for neighbor in self.graph.get(node, []):
                     if neighbor not in visited:
                         queue.append(neighbor)
         return order
 
-    def dfs(self, start):
-        # Note: Only reachable nodes are included; extend to include all nodes if needed
+    def dfs(self, start, goal=None):
         all_nodes = set(self.graph).union(*self.graph.values())
         if start not in all_nodes:
             raise ValueError(f"Node '{start}' not in graph")
+        if goal and goal not in all_nodes:
+            raise ValueError(f"Goal node '{goal}' not in graph")
         visited, order, stack = set(), [], [start]
         while stack:
             node = stack.pop()
             if node not in visited:
                 visited.add(node)
                 order.append(node)
+                if node == goal:
+                    return order
                 for neighbor in reversed(self.graph.get(node, [])):
                     if neighbor not in visited:
                         stack.append(neighbor)
@@ -187,8 +193,13 @@ class GraphApp:
         )
         self.start = Entry(control_frame, bg=TEXT_BG, fg=FG, insertbackground=FG)
         self.start.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-        Label(control_frame, text="Algo:", bg=BG, fg=FG).grid(
+        Label(control_frame, text="Goal:", bg=BG, fg=FG).grid(
             row=1, column=0, padx=5, pady=5, sticky="e"
+        )
+        self.goal = Entry(control_frame, bg=TEXT_BG, fg=FG, insertbackground=FG)
+        self.goal.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        Label(control_frame, text="Algo:", bg=BG, fg=FG).grid(
+            row=2, column=0, padx=5, pady=5, sticky="e"
         )
         style = ttk.Style()
         style.configure("TMenubutton", background=BTN_BG, foreground=FG)
@@ -196,10 +207,10 @@ class GraphApp:
         menu = ttk.OptionMenu(
             control_frame, self.algo, "bfs", "bfs", "dfs", style="TMenubutton"
         )
-        menu.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        menu.grid(row=2, column=1, padx=5, pady=5, sticky="w")
         Button(
             control_frame, text="Run", command=self.run, bg=BTN_BG, fg=FG, width=10
-        ).grid(row=2, column=0, columnspan=2, pady=5)
+        ).grid(row=3, column=0, columnspan=2, pady=5)
 
         # Output
         self.out = Label(
@@ -234,18 +245,21 @@ class GraphApp:
 
     def run(self):
         start = self.start.get().strip().upper()
+        goal = self.goal.get().strip().upper() or None
         if not self.g.graph:
             self.out.config(text="Output:")
             self.start.delete(0, END)
+            self.goal.delete(0, END)
             messagebox.showerror("Error", "Graph is empty")
             return
         method = self.g.bfs if self.algo.get() == "bfs" else self.g.dfs
         try:
-            result = method(start)
+            result = method(start, goal)
             self.out.config(text=f"Output: {' → '.join(result)}")
         except ValueError as e:
             self.out.config(text="Output:")
             self.start.delete(0, END)
+            self.goal.delete(0, END)
             messagebox.showerror("Error", str(e))
 
 
